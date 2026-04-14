@@ -1,0 +1,19 @@
+{
+  "name": "SDSC-P2-JS-Solution",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "server": "node app/server.js",
+    "client": "node app/client.js",
+    "helper": "node app/helper.js",
+    "test": "node --test"
+  },
+  "private": true,
+  "dependencies": {
+    "jose": "^6.0.10",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
+  }
+}
