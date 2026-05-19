@@ -1,5 +1,6 @@
 import * as jose from "jose"
 import * as readline from "node:readline";
+import { text } from "node:stream/consumers";
 
 /**
  * Encrypts data using the JSON Web Encryption (JWE) standard with asymmetric encryption.
@@ -16,6 +17,15 @@ import * as readline from "node:readline";
 async function encryptData(data, certificate) {
     /* TASK 2.1 - encrypt */
     /* INSERT CODE HERE */
+    const textEncoder = new TextEncoder()
+    const encodedData = textEncoder.encode(data)
+    const generalEncrypt = new jose.GeneralEncrypt(encodedData)
+
+    generalEncrypt.setProtectedHeader({ alg: 'RSA-OAEP-256', enc: 'A128CBC-HS256' })
+    generalEncrypt.addRecipient(certificate)
+
+    return await generalEncrypt.encrypt()
+
 }
 
 /**
@@ -33,6 +43,10 @@ async function encryptData(data, certificate) {
 async function decryptData(data, key) {
     /* TASK 2.2 - decrypt */
     /* INSERT CODE HERE */
+    const decryptedData = await jose.generalDecrypt(data, key)
+    const plaintext = decryptedData.plaintext
+    const textDecoder = new TextDecoder()
+    return textDecoder.decode(plaintext)
 }
 
 const rl = readline.createInterface({

@@ -5,20 +5,17 @@ import {decryptData, encryptData} from "./utils.js"
 
 console.log('starting server')
 
-/* TASK 1 - Setup */
-/* INSERT CODE HERE */
+//task 1 - Setup
+import * as jose from 'jose'
+import { log } from "console"
+const fhCertIn= fs.readFileSync('./certs/FH.cer', 'utf-8')
+const fhCert= await jose.importX509(fhCertIn, 'RSA-OAEP-256')
+const fhKeyIn= fs.readFileSync('./certs/FH.pem', 'utf-8')
+const fhKey= await jose.importPKCS8(fhKeyIn, 'RSA-OAEP-256')
 
-//Import the jose library
+console.log(fhCert)
+console.log(fhKey)
 
-//Read the certificate
-
-//Import the certificate with jose
-
-//Read the private key
-
-//Import the private key with jose
-
-//Verify that everything was successful
 
 const server = new Server(8080)
 
@@ -56,9 +53,33 @@ server.on("connection", (socket) => {
     })
 
     /* TASK 4 - Implementing a safe challenge-response procedure with a pre-shared key */
-    /* INSERT CODE HERE */
-})
+    socket.on('safe-ch-resp', () => {
+        socket.emit('needs-response', 'challenge: please send me PSK') //ask for PSK first
+        socket.once('response', async (response) => { 
+            const psk= BigInt(response)  //convert PSK to BigInt
+            const challenge = generateChallenge() //generate challenge
+            const secondModified= challenge.second + psk //modify second number with PSK
+            const challengeString= `${challenge.first},${secondModified}` //create challenge string with modified second number
+            const encryptedChallenge= await encryptData(challengeString, fhCert) //encrypt challenge with FH's certificate
+            const hexEncryptedChallenge= Buffer.from(JSON.stringify(encryptedChallenge)).toString('hex')//convert to hex
+            socket.emit('needs-response', hexEncryptedChallenge)  //send encrypted challenge
+            
+            socket.once('response', async (encryptedResponse) => { 
+                const parsedresponse= Buffer.from(encryptedResponse, 'hex').toString('utf8')//convert from hex to utf8
+                const decryptedResponse= await decryptData(JSON.parse(parsedresponse), fhKey) //decrypt response with FH's private key
+                const expectedResponse= String(challenge.first + challenge.second) //expected response is the sum of the original first and second numbers (without PSK modification)
+                decryptedResponse === expectedResponse
+                    ? socket.send('success')
+                    : socket.send('failure')
+            })
+        })
+    })
 
+
+
+
+})  
+        
 /**
  * Generates a challenge consisting of two random numbers and their sum.
  *
