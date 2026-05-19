@@ -1,4 +1,6 @@
 import {collectMultilineResponse, collectResponse, decryptData, encryptData} from "./utils.js"
+import * as jose from 'jose'
+import fs from "fs"
 
 console.log('starting helper')
 
@@ -6,19 +8,14 @@ async function main() {
     let choice
 
     /* TASK 1 - Setup */
-    /* INSERT CODE HERE */
-
-    //Import the jose library
-
-    //Read the certificate
-
-    //Import the certificate with jose
-
-    //Read the private key
-
-    //Import the private key with jose
-
-    //Verify that everything was successful
+   //task 1 - Setup
+   const fhCertIn= fs.readFileSync('./certs/FH.cer', 'utf-8')
+   const fhCert= await jose.importX509(fhCertIn, 'RSA-OAEP-256')
+   const fhKeyIn= fs.readFileSync('./certs/FH.pem', 'utf-8')
+   const fhKey= await jose.importPKCS8(fhKeyIn, 'RSA-OAEP-256')
+   
+   console.log(fhCert)
+   console.log(fhKey)
 
     do {
         let encryptedResponse, base64EncryptedResponse, result, psk, sum, response, hexEncryptedResponse,
@@ -42,7 +39,7 @@ async function main() {
                 psk = BigInt(await collectResponse())
                 sum = result - psk
                 response = sum.toString()
-                encryptedResponse = await encryptData(response, cert)
+                encryptedResponse = await encryptData(response, fhCert)
                 hexEncryptedResponse = Buffer.from(JSON.stringify(encryptedResponse)).toString('hex')
                 console.log("Encrypted response (hex): " + hexEncryptedResponse)
                 console.log()
@@ -51,7 +48,7 @@ async function main() {
             case 3: // Decode a hex-encoded message
                 console.log('Please enter the hex-encoded message: ')
                 response = Buffer.from(await collectMultilineResponse(), 'hex').toString('utf8')
-                decryptedRawChallenge = await decryptData(JSON.parse(response), key)
+                decryptedRawChallenge = await decryptData(JSON.parse(response), fhKey)
                 console.log("Decrypted challenge: " + decryptedRawChallenge)
                 console.log()
                 break
